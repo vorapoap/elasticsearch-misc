@@ -50,7 +50,12 @@
     LINENO,TIME_SPENT,NGRAM,SCORE,EN_NAME,EN_BRAND_NAME,TH_NAME,TH_BRAND_NAME
 
 Remark: Each line begun with LINENO,TIME_SPENT and NGRAM which can't be omitted, and following by whatever defined by "jq_query_field", 
-In this case it is ".hits.hits[] | [._score, ._source.locale.en.name, ._source.locale.en.brand_name, ._source.locale.th.name, ._source.locale.th.brand_name]" suffix with "| @csv"
+In this case it is 
+
+    .hits.hits[] | [._score, ._source.locale.en.name, ._source.locale.en.brand_name, ._source.locale.th.name, ._source.locale.th.brand_name]"
+
+By not disable CSV output mode, above jq_query_field will be sufficed with "| @csv"
 
 Created by Vorapoap Lohwongwatana
+
 The script is provided without any warranty.
