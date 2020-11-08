@@ -8,7 +8,7 @@ TMP_FILE="/tmp/keyword.txt"
 CSV_MODE=1
 VERBOSE_MODE=0
 NGRAM_MODE=0
-JQ_SYNTAX=".hits.hits[]._source.locale.en | [.name, .brand_name]"
+JQ_SYNTAX=".hits.hits[]._source.locale | [.en.name, .en.brand_name, .th.name, .th.brand_name]"
 
 if [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
 	echo "The version (${BASH_VERSINFO}) of bash shell does not support associative arrays."
@@ -29,7 +29,7 @@ help() (
 	echo "  -q [query]: Post query (default = {\"query:{\"match_all\":{}}"
 	echo "  -d [post_data_file]: Post body query that contains placeholder (default = none and use match_all) "
 	echo "  -p [keyword_placeholder]: Placeholder string to be replaced with performing keyword (default = ${KEYWORD_PLACEHOLDER})"
-	echo "  -a [amount]: Amount of results to be displayed (default = ${RESULT_AMOUNT})"
+	#echo "  -a [amount]: Amount of results to be displayed (default = ${RESULT_AMOUNT})"
 	echo "  -H [header]: Content-type header (default = ${CONTENT_TYPE_HEADER})"
 	echo "  -k [keyword_file]: Load keyword from file instead of search_keyword (default = None)"
 	echo "  -f [jq_query_field]: Field(s) to be displayed in jq syntax (default = ${JQ_SYNTAX})"
@@ -50,7 +50,7 @@ while getopts "q:d:p:a:H:k:f:hrv:N"  option; do
 			POST_QUERY=$OPTARG
 			;;
 		d)
-			POST_DATA_FILE=$OTPARG
+			POST_DATA_FILE=$OPTARG
 			;;
 		p)
 			KEYWORD_PLACEHOLDER=$OPTARG
@@ -123,7 +123,7 @@ fi
 # Provide POST_DATA_FILE
 if [[ ! -z "$POST_DATA_FILE" ]]; then
 	POST_QUERY=`cat ${POST_DATA_FILE}`
-	verbose "Found ${#POST_QUERY} byte(s) in ${POST_DATA_FILE} for POST body."
+	verbose 1 "Found ${#POST_QUERY} byte(s) in ${POST_DATA_FILE} for POST body."
 fi
 
 verbose 1 "Post URL = ${POST_URL}"
@@ -157,7 +157,7 @@ while IFS= read -r KEYWORD ; do
 		#echo $QUERY
 		#echo ${RESULT} | jq "${JQ_SYNTAX}" --compact-output
 		if (( $CSV_MODE > 0 )); then
-			echo ${RESULT} | jq -r "${JQ_SYNTAX} | @csv" --compact-output | sed "s/.*/${KEYWORD_NGRAM},&/" 
+			echo ${RESULT} | jq -r "${JQ_SYNTAX} | @csv" --compact-output | sed "s/.*/${KEYWORD_LINE},${KEYWORD_NGRAM},&/" 
 		else
 			echo ${RESULT} | jq -r "${JQ_SYNTAX}" --compact-output
 		fi 
