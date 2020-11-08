@@ -8,7 +8,8 @@ TMP_FILE="/tmp/keyword.txt"
 CSV_MODE=1
 VERBOSE_MODE=0
 NGRAM_MODE=0
-JQ_SYNTAX=".hits.hits[]._source.locale | [.en.name, .en.brand_name, .th.name, .th.brand_name]"
+JQ_TIME_QUERY=".took"
+JQ_FIELD_QUERY=".hits.hits[] | [._score, ._source.locale.en.name, ._source.locale.en.brand_name, ._source.locale.th.name, ._source.locale.th.brand_name]"
 
 if [ "${BASH_VERSINFO:-0}" -lt 4 ]; then
 	echo "The version (${BASH_VERSINFO}) of bash shell does not support associative arrays."
@@ -32,7 +33,7 @@ help() (
 	#echo "  -a [amount]: Amount of results to be displayed (default = ${RESULT_AMOUNT})"
 	echo "  -H [header]: Content-type header (default = ${CONTENT_TYPE_HEADER})"
 	echo "  -k [keyword_file]: Load keyword from file instead of search_keyword (default = None)"
-	echo "  -f [jq_query_field]: Field(s) to be displayed in jq syntax (default = ${JQ_SYNTAX})"
+	echo "  -f [jq_query_field]: Field(s) to be displayed in jq syntax (default = ${JQ_FIELD_QUERY})"
 	echo "  -v [mode=0,1,2] Turn on verbose mode (default = ${VERBOSE_MODE}"
 	echo "  -r Disable CSV mode"
 	echo "  -N Enable edge-n-gram mode from 3 characters"
@@ -65,7 +66,7 @@ while getopts "q:d:p:a:H:k:f:hrv:N"  option; do
 			KEYWORD_FILE=$OPTARG
 			;;
 		f)
-			JQ_SYNTAX=$OPTARG
+			JQ_FIELD_QUERY=$OPTARG
 			;;
 		r) 
 			CSV_MODE=0
@@ -152,14 +153,15 @@ while IFS= read -r KEYWORD ; do
 		verbose 1 "Line: ${KEYWORD_LINE} - Len: ${KEYWORD_LEN} - Ngram Keyword: ${KEYWORD_NGRAM}"
 
 		QUERY=${POST_QUERY//${KEYWORD_PLACEHOLDER}/${KEYWORD_NGRAM}} # No need to replace newline and escape double quote
-		verbose 2 "{$QUERY}"
+		verbose 2 "${QUERY}"
 		RESULT=`curl -sS -XPOST --insecure "${POST_URL}" -H "${CONTENT_TYPE_HEADER}" -d "${QUERY}" --stderr - `
 		#echo $QUERY
-		#echo ${RESULT} | jq "${JQ_SYNTAX}" --compact-output
+		#echo ${RESULT} | jq "${JQ_FIELD_QUERY}" --compact-output
 		if (( $CSV_MODE > 0 )); then
-			echo ${RESULT} | jq -r "${JQ_SYNTAX} | @csv" --compact-output | sed "s/.*/${KEYWORD_LINE},${KEYWORD_NGRAM},&/" 
+			TOOK=`echo ${RESULT} | jq -r "${JQ_TIME_QUERY}"`
+			echo ${RESULT} | jq -r "${JQ_FIELD_QUERY} | @csv" --compact-output | sed "s/.*/${KEYWORD_LINE},${TOOK},${KEYWORD_NGRAM},&/" 
 		else
-			echo ${RESULT} | jq -r "${JQ_SYNTAX}" --compact-output
+			echo ${RESULT} | jq -r "${JQ_FIELD_QUERY}" --compact-output
 		fi 
 	done
 done < "$KEYWORD_FILE"
